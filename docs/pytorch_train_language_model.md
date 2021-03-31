@@ -1,4 +1,4 @@
-# Hugging Face Transformers ではじめる PyTorch での言語モデル学習
+# PyTorch での言語モデル学習 - パイプライン
 
 自分の環境の CUDA のバージョンを確認して、公式ドキュメント に従ってコマンドを実行する。対応した PyTorch をインストールします。
 今回は CUDA 11.1 対応の Pytorch をインストールします。
@@ -27,7 +27,7 @@ import transformers
 tokenizer = transformers.AutoTokenizer.from_pretrained("colorfulscoop/gpt2-small-ja")
 ```
 
-## データをロードする
+## Dataset の作成
 
 PyTorch でモデル学習のためにはじめに行うことは DataLoader の作成です。
 DatLoader はデータをロードする役目を追っています。
@@ -80,6 +80,8 @@ valid_dataset = BlockDataset.from_file(block_size=1024, tokenizer=tokenizer, fil
 ```python
 shuffled_train_dataset = torch.utils.data.BufferedShuffleDataset(train_dataset, buffer_size=100)
 ```
+
+## DataLoader の作成
 
 
 ```python

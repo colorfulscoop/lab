@@ -1,1 +1,1 @@
-* [Hugging Face Transformers ではじめる PyTorch での言語モデル学習](pytorch_train_language_model.md)
+* [PyTorch での言語モデル学習 - 学習パイプライン](pytorch_train_language_model.md)
