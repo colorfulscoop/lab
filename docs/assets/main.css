@@ -1,0 +1,67 @@
+/* Font configuration
+ *
+ * "M PLUS 1p" is licensed under [SIL Open Font License](https://scripts.sil.org/cms/scripts/page.php?site_id=nrsi&id=OFL)
+ * by https://fonts.google.com/specimen/M+PLUS+1p?subset=japanese&selection.family=M+PLUS+1p
+ *
+*/
+@import url('https://fonts.googleapis.com/css2?family=M+PLUS+1p&display=swap');
+body {
+    font-family: 'M PLUS 1p', sans-serif;
+    color: rgb(78, 44, 1);
+}
+
+/* Body */
+.container {
+    padding-top: 2em;
+    padding-bottom: 2em;
+}
+
+h2 {
+    padding-bottom: 0.5em;
+}
+
+/* header */
+.header {
+    padding: 5em 0 0 0;
+    height: 10em;
+    text-align: center;
+    /*
+    background-size: auto 90%;
+    background-position: 2em 1.5em;
+    background-repeat: no-repeat;
+    */
+    /*
+    background-color: rgb(255, 215,75);
+    */
+}
+.header .title{
+    font-size: xx-large;
+    font-weight: bold;
+}
+
+/* footer */
+footer {
+    padding: 1em 0 1em 0em;
+    /*
+    background-color: rgb(255, 215, 75);
+    */
+}
+
+footer .copyright {
+    padding: 1em 0 1em 0em;
+    text-align: center;
+}
+
+footer .copyright-others {
+    padding: 1em 0 1em 0em;
+    text-align: center;
+}
+
+/* anker */
+a {
+}
+
+a:hover {
+  color: rgb(78, 44, 1);
+}
+
