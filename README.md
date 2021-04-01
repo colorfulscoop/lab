@@ -11,3 +11,6 @@ GitHub の Jekyll のデフォルトテーマには [primer](https://github.com/
 カスタム方法はこの Git リポジトリを参照するとよい。
 
 Jekyll の設定に使う `_config.yml` はドキュメントルートにおく必要があるので、 `docs/` 以下を公開する場合には `docs/_config.yml` というファイルにする
+
+ページレイアウトを変更するには、https://github.com/pages-themes/primer/ に従って `docs/_layouts/default.html` を配置して、その中にレイアウトをかく。
+レイアウトの書き方は primer に付属している https://github.com/pages-themes/primer/blob/master/_layouts/default.html が参考になる。
