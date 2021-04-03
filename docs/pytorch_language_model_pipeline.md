@@ -88,11 +88,14 @@ PyTorch でモデルを学習する際の流れ（ここではこれを **学習
 
 1. Dataset の作成
 1. DataLoader の作成
+1. モデルの準備
 1. 学習ループ
 
 Datasetの作成では、モデルへ入力するデータを提供するDatasetを作成します。
 
 DataLoaderの作成では、Datasetが提供するデータを、モデルが効率的に扱えるバッチの形に変換するDataLoaderを作成します。
+
+モデルの準備では、学習するモデルを作成します。今回は Hugging Face transformers のモデルを利用しますが、必要に応じて自分でモデルを実装することになります。
 
 学習ループでは、DataLoaderから受け取ったバッチに対して、損失の計算グラフの作成、損失の計算グラフから勾配の計算、そしてモデルのパラメータのアップデートのサイクルを回します。
 
@@ -309,16 +312,16 @@ sample_dataloader = torch.utils.data.DataLoader(dataset=sample_dataset, batch_si
 
 
 ```python
-shuffled_train_loader = torch.utils.data.DataLoader(
+train_loader = torch.utils.data.DataLoader(
     dataset=shuffled_train_dataset,
-    batch_size=3,
+    batch_size=2,
     collate_fn=collate_fn,
     prefetch_factor=10,
     num_workers=1,
 )
 valid_loader = torch.utils.data.DataLoader(
     dataset=valid_dataset,
-    batch_size=3,
+    batch_size=2,
     collate_fn=collate_fn,
     prefetch_factor=10,
     num_workers=1,
@@ -327,5 +330,722 @@ valid_loader = torch.utils.data.DataLoader(
 
 
 ```python
-
+import itertools
+[{key: val.size() for key, val in x.items()} for x in itertools.islice(train_loader, 3)]
 ```
+
+
+
+
+    [{'input_ids': torch.Size([2, 1024]), 'labels': torch.Size([2, 1024])},
+     {'input_ids': torch.Size([2, 1024]), 'labels': torch.Size([2, 1024])},
+     {'input_ids': torch.Size([2, 1024]), 'labels': torch.Size([2, 1024])}]
+
+
+
+## モデルの準備
+
+Hugging Face transformers のモデルの初期化には、まず Config クラスでモデルのレイヤー数といった値を設定したのちに、モデルのクラスに渡してインスタンス化します。
+今回は、OpenAI GPT2 の Config クラス `transformers.GPT2` を設定し、その言語モデルである `transformers.GPT2LMHeadModel` をしインスタンス化します。
+
+
+```python
+config = transformers.GPT2Config(
+    vocab_size=len(tokenizer),
+    tokenizer_class="BertGenerationTokenizer",
+    bos_token_id=tokenizer.bos_token_id,
+    pad_token_id=tokenizer.pad_token_id,
+    eos_token_id=tokenizer.eos_token_id,
+    sep_token_id=tokenizer.sep_token_id,
+    cls_token_id=tokenizer.cls_token_id,
+    unk_token_id=tokenizer.unk_token_id,
+)     
+```
+
+
+```python
+config
+```
+
+
+
+
+    GPT2Config {
+      "activation_function": "gelu_new",
+      "attn_pdrop": 0.1,
+      "bos_token_id": 2,
+      "cls_token_id": 4,
+      "embd_pdrop": 0.1,
+      "eos_token_id": 3,
+      "gradient_checkpointing": false,
+      "initializer_range": 0.02,
+      "layer_norm_epsilon": 1e-05,
+      "model_type": "gpt2",
+      "n_ctx": 1024,
+      "n_embd": 768,
+      "n_head": 12,
+      "n_inner": null,
+      "n_layer": 12,
+      "n_positions": 1024,
+      "pad_token_id": 0,
+      "resid_pdrop": 0.1,
+      "sep_token_id": 5,
+      "summary_activation": null,
+      "summary_first_dropout": 0.1,
+      "summary_proj_to_labels": true,
+      "summary_type": "cls_index",
+      "summary_use_proj": true,
+      "tokenizer_class": "BertGenerationTokenizer",
+      "transformers_version": "4.4.2",
+      "unk_token_id": 1,
+      "use_cache": true,
+      "vocab_size": 32000
+    }
+
+
+
+
+```python
+model = transformers.GPT2LMHeadModel(config)
+```
+
+モデルの準備ができたので、学習ループの実装にうつりましょう。
+
+## 学習ループ
+
+学習ループを実装するにあたり、まずは PyTorch でのモデルの学習の流れを一度まとめます。
+
+モデルの学習にあたり大きくは次のステップが必要になります。
+
+1. 損失の計算グラフの構築
+1. 勾配の計算
+1. 勾配に従ったパラメータのアップデート
+
+ニューラルネットワークでは勾配に基づいてパラメータを更新していきます。そして、その勾配の計算には構築した計算グラフを通して自動微分を用います。
+したがって、勾配の計算を行うためにはじめに行うことは損失の計算グラフの構築になります。
+
+計算グラフの構築と自動微分は、まさに PyTorch の **テンソル** の大きな目的であり、テンソルを使うことによって実現できます。
+簡単な例で見て見ましょう。
+
+
+```python
+import torch
+
+x = torch.tensor(10.0, requires_grad=True)
+y = torch.tensor(5.0)
+z = x + 2 * y
+w = z ** 2
+```
+
+
+```python
+x, y, z, w
+```
+
+
+
+
+    (tensor(10., requires_grad=True),
+     tensor(5.),
+     tensor(20., grad_fn=<AddBackward0>),
+     tensor(400., grad_fn=<PowBackward0>))
+
+
+
+`x` のように `requires_grad` を設定したテンソルは、そのテンソルが計算に使われた計算グラフに対して自動微分を実行した際に、微分の結果が `.grad` に保存されます。
+
+自動微分をする前の `.grad` の値を見てみましょう
+
+
+```python
+x.grad, y.grad
+```
+
+
+
+
+    (None, None)
+
+
+
+このように微分を行う前は `.grad` には `None` が設定されています。
+ではテンソルの `.backward()` メソッドを呼び出して自動微分を行ってみましょう。
+
+
+```python
+w.backward()
+```
+
+微分した結果がテンソルに入っているか `.grad` にアクセスして確かめてみます。
+
+
+```python
+x.grad, y.grad
+```
+
+
+
+
+    (tensor(40.), None)
+
+
+
+すると、確かに `requires_grad=True` を設定したテンソルにのみ微分の値が計算されて保存されているのがわかります。
+
+さて、計算グラフの構築と自動微分による勾配の計算は PyTorch のテンソルを使うことで行うということがわかりました。
+しかし、実際の PyTorch でのモデルは `nn.Module` というモジュールのサブクラスとして実装を行います。
+それではモジュールとテンソルの関係はどうなっているでしょうか？
+
+実はモジュールは、自身が最適化が必要なテンソルを内部で `requires_grad=True` パラメータを付与して保持しています。
+（このようなテンソルを **パラメータ** と呼びます。）
+パラメータには、モジュールの `.parameters` アトリビュートを通してアクセスできます。
+
+
+```python
+one_param = next(model.parameters())
+one_param
+```
+
+
+
+
+    Parameter containing:
+    tensor([[ 0.0067,  0.0060, -0.0201,  ..., -0.0153, -0.0092,  0.0038],
+            [-0.0231,  0.0080, -0.0129,  ..., -0.0116, -0.0267,  0.0094],
+            [ 0.0095,  0.0595, -0.0047,  ..., -0.0033,  0.0188, -0.0065],
+            ...,
+            [-0.0005,  0.0166, -0.0038,  ..., -0.0315, -0.0261,  0.0179],
+            [ 0.0221,  0.0020, -0.0198,  ..., -0.0117,  0.0096, -0.0135],
+            [ 0.0208,  0.0151,  0.0328,  ...,  0.0188, -0.0229,  0.0227]],
+           requires_grad=True)
+
+
+
+結果を見ると分かる通り、テンソルに `requires_grad=True` が設定されていることがわかります。
+このように、モジュールは一見すると何を行っているかわかりにくいかもしれませんが、微分対象となるテンソルをパラメータとして管理しているわけです。
+
+ここまでで計算グラフの構築と勾配の計算の方法がわかりました。
+最後に勾配に従ったパラメータのアップデートについて見ていきましょう。
+
+そもそも勾配に従ってパラメータをアップデートするにはどのような情報が必要でしょうか。
+先ほどの `x` を SGD を使って更新することを考えると、
+
+```py
+lr = 0.001
+x = x - lr * x.grad
+```
+
+のように、パラメータをその勾配に従って更新を行えばよいことがわかります。
+より一般に、パラメータをアップデートする機構（これを **オプティマイザ** といいます）には、更新対象のパラメータ、およびその勾配をわたしておくことでパラメータのアップデートが行えます。
+これらの情報は、今までの説明から分かる通り PyTorch のテンソルがその役目を担っています。パラメータは `requires_grad=True` が設定されたテンソル、そしてその勾配は `.grad` からアクセスできるのでした。
+したがって、オプティマイザには更新対象のテンソルを渡しておけばよいわけです
+
+PyTorch では、オプティマイザは [`torch.optim` 以下で定義](https://pytorch.org/docs/stable/optim.html) されており、そのイニシャライザには今確認したように、更新対象となるテンソルを渡して初期化を行います。
+
+
+```python
+x_optim = torch.optim.SGD([x], lr=0.001)
+```
+
+生成したオプティマイザの `step()` メソッドを呼ぶことで、パラメータに設定された勾配に従って、パラメータが更新されます。
+
+まず更新前の `x` とその勾配を確認しておきましょう。
+
+
+```python
+x, x.grad
+```
+
+
+
+
+    (tensor(10., requires_grad=True), tensor(40.))
+
+
+
+`step()` メソッドでパラメータを更新してみます。
+
+
+```python
+x_optim.step()
+```
+
+予想では、 `10 - 40 * 0.001 = 9.96` となるはずです。実際に表示して確認してみます。
+
+
+```python
+x
+```
+
+
+
+
+    tensor(9.9600, requires_grad=True)
+
+
+
+予想通りの値になっていますね。
+
+ではモジュールに対してオプティマイザを作成してみましょう。モジュールのパラメータは `parameters()` で取得できるでした。
+したがって、オプティマイザのイニシャライザにその値を直接渡せばよいことになります。
+また、オプティマイザは SGD の代わりに Adam を使ってみることにします。
+
+
+```python
+optimizer = torch.optim.Adam(model.parameters(), lr=1.0e-4)
+```
+
+**Note:** オプティマイザは、イニシャライザに渡されたパラメータの更新のみを行います。したがって、更新を行いたくないパラメータがある場合には、オプティマイザのイニシャライザに渡さなければよいことになります。
+モジュールの `.named_parameters()` メソッドでモジュール名つきのパラメータを取得できるため、そのモジュール名でフィルタをかける方法が有効です。
+
+```py
+torch.optim.Adam(
+    [param for name, param in model.named_parameters()
+     if name in ["module", "names", "to", "be", "updated"]
+     ],
+    lr=1.0e-4
+)
+```
+
+必要な準備は整いましたので、ついに学習ループの実装に移ります。
+重要な点はすでに説明済みなので、コメントとともに実装をしてみます。
+
+
+```python
+def train(
+    model,
+    optimizer,
+    train_dataloader,
+    valid_dataloader,
+    n_epochs,
+    loss_fn,
+    device,
+):
+    for epoch in range(1, n_epochs+1):
+        # [*1] 学習モード
+        model.train()
+
+        train_loss = 0
+
+        for train_batch_idx, item in enumerate(train_dataloader, start=1):
+            # ロスの計算グラフを構築する
+            # forward 関数は、検証時にも利用するため別の関数で後で定義する
+            loss = forward(model, item, loss_fn, device)
+            # [*2] 勾配の初期化
+            optimizer.zero_grad()
+            # 勾配を計算し、その結果をテンソルの.gradに保存する
+            loss.backward()
+            # 勾配に従ってオプティマイザに登録したパラメータ (required_grad=Trueのテンソル) を更新
+            optimizer.step()
+            
+            # エポックのロス計算は、勾配計算を行わないため計算グラフを構築する必要はない。
+            # 計算グラフを構築しないために item を使ってテンソルの中身を取り出して計算している。
+            # item を使わないと計算グラフをバッチのループ毎に作り続けそれを train_loss にキープし続けるため、
+            # メモリを大量に消費してしまう
+            train_loss += loss.item()
+            
+            # ログの出力
+            if train_batch_idx % 100 == 0:
+                batch_log = dict(epoch=epoch, batch=train_batch_idx, train_loss=train_loss/train_batch_idx)
+                print(batch_log)
+
+            
+        # [*1] 検証モード
+        model.eval()
+        # [*3] 推論モードでは勾配計算しないので計算グラフを作成する必要がない。
+        #      `torch.no_grad()` コンテキスト内のテンソルの計算では計算グラフは構築されない。
+        with torch.no_grad():
+            val_loss = 0
+            for val_batch_idx, item in enumerate(valid_dataloader, start=1):
+                loss = forward(model, item, loss_fn, device)
+                val_loss += loss.item()
+                
+                # 次の行の assert で計算グラフが構築されていないことが確認できる。
+                # assert loss.grad is None
+                
+        epoch_log = dict(
+            epoch=epoch,
+            train_loss=train_loss/train_batch_idx,
+            valid_loss=val_loss/val_batch_idx,
+        )
+        print(epoch_log)
+```
+
+
+```python
+def forward(model, item, loss_fn, device):
+    """1バッチ毎のロスの計算を行う。
+    
+    item は DataLoader が返す辞書オブジェクトで `input_ids` と `labels` キーからなる。
+    各々さずは (batch_size, input_len) となる。
+    """
+    # テンソルの to はインプレースではないので代入しないといけないということであっている？
+    src, tgt = item["input_ids"], item["labels"]
+    
+    # [*4] テンソルを対象デバイスに移す。
+    # テンソルの `to` はモジュールの `to` と異なりインプレースでデバイスに移らず、
+    # 移動した先の新しいテンソルを返すので、必ず代入を行うこと
+    src = src.to(device=device)
+    tgt = tgt.to(device=device)
+
+    # ロスを計算する
+    output = model(input_ids=src)
+    logits = output.logits  # shape: (batch_size, input_len, vocab_size)
+    loss = loss_fn(
+        input=logits.view(-1, logits.shape[-1]),
+        target=tgt.view(-1)
+    )
+    return loss
+```
+
+いくつか [*N] の形式でコメントを付けた箇所について説明を加えます。
+
+**[*1]** PyTorch のモジュールには学習モードと検証モードがあり、それぞれ `.train()`, `.eval()` メソッドで切り替えることができます。これらは、例えば `Dropout` のような学習時と検証時の挙動を変更する必要があるモジュールに対して、設定を変更することを意味しています。
+基本的には、パラメータ更新を加える学習時には `.train()` で学習モードに設定し、学習後の評価時には `.eval()` で評価モードに設定します。
+
+**[*2]** 勾配は初期化しないとずっと値が加算されつづけられます。これは、例えば一つのパラメータに対して二つの計算グラフが存在している状況で便利です。例えば、 `x` の例でもう一つ `v` という計算グラフが `x` から計算されているとします。
+
+
+```python
+v = 2 * x
+```
+
+`x` の勾配は、先ほど `w` から微分を計算したため現在はこうなっています。
+
+
+```python
+x.grad
+```
+
+
+
+
+    tensor(40.)
+
+
+
+ここでもう一度 `.backward()` を呼び出して勾配を計算するとどうなるでしょうか。
+
+
+```python
+v.backward()
+```
+
+
+```python
+x.grad
+```
+
+
+
+
+    tensor(42.)
+
+
+
+以前の勾配 (`40`) に、新しい勾配 `2` が加算された結果になっていることがわかります。
+このような状況では、加算される機能は便利なのですが、バッチ毎に勾配を計算する場合はパラメータの勾配を初期化する必要があります。
+それには、オプティマイザの `.zero_grad()` メソッドで実行できます。
+`.zero_grad()` メソッドは、呼び出されるとそのオプティマイザに設定されているパラメータの勾配を `0` に初期化します。
+バッチ毎の勾配計算時にはここでの学習ループの実装のように、
+ロス計算グラフに対して `.backward()` を呼び出す直前に `.zero_grad()` を呼び出すと、
+呼び出し忘れもなくよいと考えられます。
+
+**[*3]** `requires_grad=True` が設定されたテンソルから計算した際の計算グラフ構築機能は自動微分を可能にし便利ではありますが、勾配計算が不要な場合にはオーバーヘッドとなります。
+そこで、勾配計算が不要な際にには `torch.no_grad()` コンテキスト内でテンソルの計算を行っても、計算グラフは構築されなくなり、オーバーヘッドが解消されます。
+実際に `x` に対して行って見ましょう。
+
+通常通り計算すると `grad_fn` がついていることから計算グラフが構築されることがわかります。
+
+
+```python
+x + x
+```
+
+
+
+
+    tensor(19.9200, grad_fn=<AddBackward0>)
+
+
+
+一方で、`torch.no_grad()` コンテキスト内で起算すると `grad_fn` がついていないことから計算グラフが構築されていないことがわかります。
+
+
+```python
+with torch.no_grad():
+    print(x + x)
+```
+
+    tensor(19.9200)
+
+
+**[*4]** ニューラルネットワークの学習に GPU は欠かせません。GPU で学習する際には、PyTorch のテンソルも GPU に移動させる必要があります。
+学習時には、すでに見た通り、モジュールに登録されているテンソル、および DataLoader がイテレーションし、モジュールでフォワードするテンソルの二つが大きくあり、各々を GPU のメモリ上で扱う必要があります。
+
+テンソルおよびモジュールの `.to()` メソッドは、引数に指定したデバイスに GPU にテンソルを移動させます。
+デバイスは文字列で指定でき、次のコードで GPU が利用できるときには GPU を、そうでない場合には CPU をデバイスとして設定します。
+
+
+```python
+device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+```
+
+
+```python
+device
+```
+
+
+
+
+    device(type='cuda')
+
+
+
+あとはこの `device` を使ってモジュールおよびテンソルを GPU 上に移動すれば良いことになります。
+
+まずはモジュールを GPU に移動させてみます。モジュールの `.to()` メソッドで引数に `device` を指定するだけです。
+モジュールの `.to()` メソッドはインプレースなので、結果を再度変数に代入する必要はないことに注意してください。
+
+
+```python
+model.to(device=device)
+```
+
+
+
+
+    GPT2LMHeadModel(
+      (transformer): GPT2Model(
+        (wte): Embedding(32000, 768)
+        (wpe): Embedding(1024, 768)
+        (drop): Dropout(p=0.1, inplace=False)
+        (h): ModuleList(
+          (0): Block(
+            (ln_1): LayerNorm((768,), eps=1e-05, elementwise_affine=True)
+            (attn): Attention(
+              (c_attn): Conv1D()
+              (c_proj): Conv1D()
+              (attn_dropout): Dropout(p=0.1, inplace=False)
+              (resid_dropout): Dropout(p=0.1, inplace=False)
+            )
+            (ln_2): LayerNorm((768,), eps=1e-05, elementwise_affine=True)
+            (mlp): MLP(
+              (c_fc): Conv1D()
+              (c_proj): Conv1D()
+              (dropout): Dropout(p=0.1, inplace=False)
+            )
+          )
+          (1): Block(
+            (ln_1): LayerNorm((768,), eps=1e-05, elementwise_affine=True)
+            (attn): Attention(
+              (c_attn): Conv1D()
+              (c_proj): Conv1D()
+              (attn_dropout): Dropout(p=0.1, inplace=False)
+              (resid_dropout): Dropout(p=0.1, inplace=False)
+            )
+            (ln_2): LayerNorm((768,), eps=1e-05, elementwise_affine=True)
+            (mlp): MLP(
+              (c_fc): Conv1D()
+              (c_proj): Conv1D()
+              (dropout): Dropout(p=0.1, inplace=False)
+            )
+          )
+          (2): Block(
+            (ln_1): LayerNorm((768,), eps=1e-05, elementwise_affine=True)
+            (attn): Attention(
+              (c_attn): Conv1D()
+              (c_proj): Conv1D()
+              (attn_dropout): Dropout(p=0.1, inplace=False)
+              (resid_dropout): Dropout(p=0.1, inplace=False)
+            )
+            (ln_2): LayerNorm((768,), eps=1e-05, elementwise_affine=True)
+            (mlp): MLP(
+              (c_fc): Conv1D()
+              (c_proj): Conv1D()
+              (dropout): Dropout(p=0.1, inplace=False)
+            )
+          )
+          (3): Block(
+            (ln_1): LayerNorm((768,), eps=1e-05, elementwise_affine=True)
+            (attn): Attention(
+              (c_attn): Conv1D()
+              (c_proj): Conv1D()
+              (attn_dropout): Dropout(p=0.1, inplace=False)
+              (resid_dropout): Dropout(p=0.1, inplace=False)
+            )
+            (ln_2): LayerNorm((768,), eps=1e-05, elementwise_affine=True)
+            (mlp): MLP(
+              (c_fc): Conv1D()
+              (c_proj): Conv1D()
+              (dropout): Dropout(p=0.1, inplace=False)
+            )
+          )
+          (4): Block(
+            (ln_1): LayerNorm((768,), eps=1e-05, elementwise_affine=True)
+            (attn): Attention(
+              (c_attn): Conv1D()
+              (c_proj): Conv1D()
+              (attn_dropout): Dropout(p=0.1, inplace=False)
+              (resid_dropout): Dropout(p=0.1, inplace=False)
+            )
+            (ln_2): LayerNorm((768,), eps=1e-05, elementwise_affine=True)
+            (mlp): MLP(
+              (c_fc): Conv1D()
+              (c_proj): Conv1D()
+              (dropout): Dropout(p=0.1, inplace=False)
+            )
+          )
+          (5): Block(
+            (ln_1): LayerNorm((768,), eps=1e-05, elementwise_affine=True)
+            (attn): Attention(
+              (c_attn): Conv1D()
+              (c_proj): Conv1D()
+              (attn_dropout): Dropout(p=0.1, inplace=False)
+              (resid_dropout): Dropout(p=0.1, inplace=False)
+            )
+            (ln_2): LayerNorm((768,), eps=1e-05, elementwise_affine=True)
+            (mlp): MLP(
+              (c_fc): Conv1D()
+              (c_proj): Conv1D()
+              (dropout): Dropout(p=0.1, inplace=False)
+            )
+          )
+          (6): Block(
+            (ln_1): LayerNorm((768,), eps=1e-05, elementwise_affine=True)
+            (attn): Attention(
+              (c_attn): Conv1D()
+              (c_proj): Conv1D()
+              (attn_dropout): Dropout(p=0.1, inplace=False)
+              (resid_dropout): Dropout(p=0.1, inplace=False)
+            )
+            (ln_2): LayerNorm((768,), eps=1e-05, elementwise_affine=True)
+            (mlp): MLP(
+              (c_fc): Conv1D()
+              (c_proj): Conv1D()
+              (dropout): Dropout(p=0.1, inplace=False)
+            )
+          )
+          (7): Block(
+            (ln_1): LayerNorm((768,), eps=1e-05, elementwise_affine=True)
+            (attn): Attention(
+              (c_attn): Conv1D()
+              (c_proj): Conv1D()
+              (attn_dropout): Dropout(p=0.1, inplace=False)
+              (resid_dropout): Dropout(p=0.1, inplace=False)
+            )
+            (ln_2): LayerNorm((768,), eps=1e-05, elementwise_affine=True)
+            (mlp): MLP(
+              (c_fc): Conv1D()
+              (c_proj): Conv1D()
+              (dropout): Dropout(p=0.1, inplace=False)
+            )
+          )
+          (8): Block(
+            (ln_1): LayerNorm((768,), eps=1e-05, elementwise_affine=True)
+            (attn): Attention(
+              (c_attn): Conv1D()
+              (c_proj): Conv1D()
+              (attn_dropout): Dropout(p=0.1, inplace=False)
+              (resid_dropout): Dropout(p=0.1, inplace=False)
+            )
+            (ln_2): LayerNorm((768,), eps=1e-05, elementwise_affine=True)
+            (mlp): MLP(
+              (c_fc): Conv1D()
+              (c_proj): Conv1D()
+              (dropout): Dropout(p=0.1, inplace=False)
+            )
+          )
+          (9): Block(
+            (ln_1): LayerNorm((768,), eps=1e-05, elementwise_affine=True)
+            (attn): Attention(
+              (c_attn): Conv1D()
+              (c_proj): Conv1D()
+              (attn_dropout): Dropout(p=0.1, inplace=False)
+              (resid_dropout): Dropout(p=0.1, inplace=False)
+            )
+            (ln_2): LayerNorm((768,), eps=1e-05, elementwise_affine=True)
+            (mlp): MLP(
+              (c_fc): Conv1D()
+              (c_proj): Conv1D()
+              (dropout): Dropout(p=0.1, inplace=False)
+            )
+          )
+          (10): Block(
+            (ln_1): LayerNorm((768,), eps=1e-05, elementwise_affine=True)
+            (attn): Attention(
+              (c_attn): Conv1D()
+              (c_proj): Conv1D()
+              (attn_dropout): Dropout(p=0.1, inplace=False)
+              (resid_dropout): Dropout(p=0.1, inplace=False)
+            )
+            (ln_2): LayerNorm((768,), eps=1e-05, elementwise_affine=True)
+            (mlp): MLP(
+              (c_fc): Conv1D()
+              (c_proj): Conv1D()
+              (dropout): Dropout(p=0.1, inplace=False)
+            )
+          )
+          (11): Block(
+            (ln_1): LayerNorm((768,), eps=1e-05, elementwise_affine=True)
+            (attn): Attention(
+              (c_attn): Conv1D()
+              (c_proj): Conv1D()
+              (attn_dropout): Dropout(p=0.1, inplace=False)
+              (resid_dropout): Dropout(p=0.1, inplace=False)
+            )
+            (ln_2): LayerNorm((768,), eps=1e-05, elementwise_affine=True)
+            (mlp): MLP(
+              (c_fc): Conv1D()
+              (c_proj): Conv1D()
+              (dropout): Dropout(p=0.1, inplace=False)
+            )
+          )
+        )
+        (ln_f): LayerNorm((768,), eps=1e-05, elementwise_affine=True)
+      )
+      (lm_head): Linear(in_features=768, out_features=32000, bias=False)
+    )
+
+
+
+次に DataLoader がイテレーションするテンソルを GPU に移動してみます。
+モジュールの `.to()` メソッドと異なり、テンソルの `.to()` メソッドはインプレースで移動せずに、GPU のメモリ上にコピーした
+新しいテンソルのインスタンスを返します。
+従って [*4] のように結果を変数に代入する必要があることに注意してください。
+
+```py
+    src = src.to(device=device)
+    tgt = tgt.to(device=device)
+```
+
+
+さて、ここまででコメントの説明は終わりです。
+
+最後にロス関数を定義して学習ループを実行してみましょう。
+
+
+```python
+loss_fn = torch.nn.CrossEntropyLoss(ignore_index=tokenizer.pad_token_id)
+```
+
+
+```python
+train(
+    model=model,
+    optimizer=optimizer,
+    train_dataloader=train_loader,
+    valid_dataloader=valid_loader,
+    n_epochs=2,
+    loss_fn=loss_fn,
+    device=device,
+)
+```
+
+これで学習ループの実装は完了です。次のステップとして学習ループをよりよくするアイディアは、例えば次のようなものがあります。
+
+* [Tensorboard による学習の可視化](https://pytorch.org/docs/stable/tensorboard.html)
+* モデルの保存と復元（学習途中からの再開）
+* [Learning rate scheduler](https://pytorch.org/docs/stable/optim.html#how-to-adjust-learning-rate)
+* [Automatic mixed precision](https://pytorch.org/docs/stable/notes/amp_examples.html)
