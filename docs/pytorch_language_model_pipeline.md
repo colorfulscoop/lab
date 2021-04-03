@@ -30,7 +30,7 @@ Hugging Face のモデルを利用するために、 Transformers と、トー�
 !pip3 install transformers==4.4.2 sentencepiece==0.1.95
 ```
 
-**Note:** このドキュメントの実行環境は、次のように Docker コンテナ内で実行しています。
+**Note:** このドキュメントの実行環境は、次のように Docker コンテナにより環境をセットアップしています。
 
 ```sh
 $ docker container run --gpus all --rm -it -v $(pwd):/work -w /work -p 8888:8888 nvidia/cuda:11.2.2-devel-ubuntu20.04 bash
@@ -226,9 +226,13 @@ Iterable-style datasets の場合にはサンプルがどの程度あるかわ�
 shuffled_train_dataset = torch.utils.data.BufferedShuffleDataset(train_dataset, buffer_size=100)
 ```
 
-さて、これで Dataset の準備は完了です。次は DataLoader を作成にすすみましょう。
+さて、これで Dataset の準備は完了です。次は DataLoader を作成に進みましょう。
 
 ## DataLoader の作成
+
+DataLoader は、Dataset の値を受け取り、それをバッチに変形します。
+DataLoader はバッチへの変形を自動で行ってくれますが、今回の言語モデルの場合のように、自動の変換方法ではうまくいかない場合もあります。
+そのような場合には自身で `collate_fn` という関数を自分で実装し、DataLoader へ渡すことでバッチへの変形方法を指定できます。
 
 
 ```python
@@ -247,6 +251,62 @@ def collate_fn(item):
     return dic
 ```
 
+colalte_fn には、BlockDataset が返すオブジェクトの `batch_size` (`DataLoader` のイニシャライザで指定します) のリストが渡されます。
+そのリストを適切な形に変形する処理をかき、その結果を返却します。
+今回は `input_ids` と `label` をバッチ化して PyTorch のテンソルの形で返します。
+
+さて、どうなるか小さなサンプルで確かめて見ましょう。
+
+
+```python
+sample_dataloader = torch.utils.data.DataLoader(dataset=sample_dataset, batch_size=2, collate_fn=collate_fn)
+[x for x in sample_dataloader]
+```
+
+
+
+
+    [{'input_ids': tensor([[10272,    15,   679,     9,     7],
+              [ 5234,   745, 27920,   228,  9723]]),
+      'labels': tensor([[   15,   679,     9,     7,  5234],
+              [  745, 27920,   228,  9723,   120]])},
+     {'input_ids': tensor([[  120,  1622, 14738,  3291,  2832],
+              [13081,    64,  1199,   531,  1621]]),
+      'labels': tensor([[ 1622, 14738,  3291,  2832, 13081],
+              [   64,  1199,   531,  1621,  4954]])},
+     {'input_ids': tensor([[4954, 2020, 6112, 8341,   19],
+              [  16, 5658,   58,  220, 3914]]),
+      'labels': tensor([[2020, 6112, 8341,   19,   16],
+              [5658,   58,  220, 3914,    7]])}]
+
+
+
+辞書の値になっている PyTorch テンソルのサイズを見ることでよりはっきりとバッチ化されていることがわかります。
+
+
+```python
+[{key: val.size() for key, val in x.items()} for x in sample_dataloader]
+```
+
+
+
+
+    [{'input_ids': torch.Size([2, 5]), 'labels': torch.Size([2, 5])},
+     {'input_ids': torch.Size([2, 5]), 'labels': torch.Size([2, 5])},
+     {'input_ids': torch.Size([2, 5]), 'labels': torch.Size([2, 5])}]
+
+
+
+基本的にはこれで完了なのですが、効率的なバッチ化のために `prefetch_factor` と `num_workers` を導入しましょう。
+学習時に時間がかかる部分はモデルでの計算時間 (e.g. forward, backward, パラメータ更新) のほかに、データロードにかかる時間があります。
+データのロードをモデルでの計算と直列に行うと効率が悪いため、データのロードはモデルでの計算とは別に裏で進めておくと効率よく学習が行えます。
+そのためのオプションが `prefetch_factor` と `num_workers` です。
+
+`prefetch_factor` でいくつのバッチを事前に作成しておくかを指定でき、 `num_workers` でそのための裏で動かしておくプロセス数を指定します。
+これらを合わせると、実際に学習にしようする DataLoader は次のように作成できます。
+
+**Note:** 公式ドキュメントでは [Single- and Multi-process Data Loading](https://pytorch.org/docs/stable/data.html#single-and-multi-process-data-loading) の箇所で説明されています。
+
 
 ```python
 shuffled_train_loader = torch.utils.data.DataLoader(
@@ -264,17 +324,6 @@ valid_loader = torch.utils.data.DataLoader(
     num_workers=1,
 )
 ```
-
-
-```python
-import itertools
-
-for item in itertools.islice(shuffled_train_loader, 1):
-    print("Shape", {key: val.shape for key, val in item.items()})
-```
-
-    Shape {'input_ids': torch.Size([3, 1024]), 'labels': torch.Size([3, 1024])}
-
 
 
 ```python
