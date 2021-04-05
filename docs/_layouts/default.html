@@ -42,8 +42,8 @@
     </div>
 
     <div class="container-lg px-3 my-5 markdown-body">
-      {% if page.date %}<small>📅 {{ page.created_on }}</small>{% endif %}
-      {% if page.date %}<small>📅 {{ page.updated_on }}</small>{% endif %}
+      {% if page.created_on %}<small>📅 {{ page.created_on }}</small>{% endif %}
+      {% if page.updated_on %}<small>📅 {{ page.updated_on }}</small>{% endif %}
       {{ content }}
     </div>
 
