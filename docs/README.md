@@ -5,8 +5,8 @@
 **カラフルスコップ研究室** へようこそ。
 研究室のチームメンバーが日々の研究開発の内容や気づきを記事・ブログ形式でお届けします。
 
-<div class="row row-cols-1 row-cols-md-2">
-  <div class="col mb-4">
+<div class="row">
+  <div class="col-md-4">
     <div class="card">
       <!-- <img src="..." class="card-img-top" alt="..."> -->
       <div class="card-body">
@@ -15,7 +15,7 @@
       </div>
     </div>
   </div>
-  <div class="col mb-4">
+  <div class="col-md-4">
     <div class="card">
       <!-- <img src="..." class="card-img-top" alt="..."> -->
       <div class="card-body">
@@ -24,7 +24,7 @@
       </div>
     </div>
   </div>
-  <div class="col mb-4">
+  <div class="col-md-4">
     <div class="card">
       <!-- <img src="..." class="card-img-top" alt="..."> -->
       <div class="card-body">
@@ -33,7 +33,7 @@
       </div>
     </div>
   </div>
-  <div class="col mb-4">
+  <div class="col-md-4">
     <div class="card">
       <!-- <img src="..." class="card-img-top" alt="..."> -->
       <div class="card-body">
@@ -42,7 +42,7 @@
       </div>
     </div>
   </div>
-  <div class="col mb-4">
+  <div class="col-md-4">
     <div class="card">
       <!-- <img src="..." class="card-img-top" alt="..."> -->
       <div class="card-body">
