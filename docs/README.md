@@ -1,6 +1,6 @@
 # Colorful Scoop Lab
 
-![](top.png)
+<img src="top.png" alt="" class="rounded mx-auto d-block">
 
 **カラフルスコップ研究室** へようこそ。
 研究室のチームメンバーが日々の研究開発の内容や気づきを記事・ブログ形式でお届けします。
