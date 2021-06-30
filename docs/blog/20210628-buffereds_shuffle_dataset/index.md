@@ -1,6 +1,6 @@
 ---
-created_on: 2021/04/03
-updated_on: 2021/04/05
+created_on: 2021/06/28
+updated_on: 2021/06/28
 ---
 
 # PyTorch 1.9.0 で BufferedShuffleDataset を使う
@@ -51,14 +51,14 @@ AttributeError: module 'torch.utils.data' has no attribute 'BufferedShuffleDatas
 
 PyTorchのコミットを調べてみると次のようなものを見つけました。
 
-https://github.com/pytorch/pytorch/commit/89b1053413dab77c9a6c67da5a54ab9bbad1fbdd#diff-425b66e1ff01d191679c386258a7156dfb5aacd64a8e0947b24fbdebcbee8529
+[https://github.com/pytorch/pytorch/commit/89b1053413dab77c9a6c67da5a54ab9bbad1fbdd#diff-425b66e1ff01d191679c386258a7156dfb5aacd64a8e0947b24fbdebcbee8529](https://github.com/pytorch/pytorch/commit/89b1053413dab77c9a6c67da5a54ab9bbad1fbdd#diff-425b66e1ff01d191679c386258a7156dfb5aacd64a8e0947b24fbdebcbee8529)
 
 コミットを読んでいくと、どうやら`torch.utils.data` 以下から DataPipe という機能群に移されたようです。
 
 実際にコードを確認すると `torch.utils.data.datapipes.iter.combinatorics` で `ShuffleIterDataPipe` というクラスで定義され、torch.utils.data.datapipes.iter の名前空間で Shuffle という名前でimport されていることがわかります。
 
-* https://github.com/pytorch/pytorch/blob/v1.9.0/torch/utils/data/datapipes/iter/combining.py#L43
-* https://github.com/pytorch/pytorch/blob/v1.9.0/torch/utils/data/datapipes/iter/__init__.py
+* [https://github.com/pytorch/pytorch/blob/v1.9.0/torch/utils/data/datapipes/iter/combining.py#L43](https://github.com/pytorch/pytorch/blob/v1.9.0/torch/utils/data/datapipes/iter/combining.py#L43)
+* [https://github.com/pytorch/pytorch/blob/v1.9.0/torch/utils/data/datapipes/iter/__init__.py](https://github.com/pytorch/pytorch/blob/v1.9.0/torch/utils/data/datapipes/iter/__init__.py)
 
 ということは、次のようにすればうまく動くのでは...
 
