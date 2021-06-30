@@ -1,3 +1,7 @@
 .markdown-body .language-plaintext .highlight pre {
     background: floralwhite;
 }
+
+.markdown-body img {
+    max-height: 400px;
+}
