@@ -29,7 +29,7 @@
       <!-- <img src="..." class="card-img-top" alt="..."> -->
       <div class="card-body">
         <h5 class="card-title">ちびぶーちゃん</h5>
-        <p class="card-text">カラフルスコップ研究所研究員。心配性。勉強熱心でぶーちゃんを尊敬している。</p>
+        <p class="card-text">カラフルスコップ研究室研究員。心配性。勉強熱心でぶーちゃんを尊敬している。</p>
       </div>
     </div>
   </div>
