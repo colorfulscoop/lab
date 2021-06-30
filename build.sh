@@ -1,12 +1,13 @@
 set -eu
 
 # Config vars
-SRCDIR=$(pwd)/notebook
-TGTDIR=$(pwd)/docs
+SRCDIR=notebook
+TGTDIR=docs
 
-for article_type in article; do
-    for nb_path in $(ls -1 ${SRCDIR}/${article_type}/*.ipynb); do
-        base=$(basename ${nb_path} .ipynb)
+for article_type in article blog; do
+    for nb_path in $(ls -1 ${SRCDIR}/${article_type}); do
+        base=$(basename ${nb_path})
+        indir=${SRCDIR}/${article_type}/${base}
 
         outdir=${TGTDIR}/${article_type}/${base}
         if [ ! -e "${outdir}" ]; then
@@ -14,7 +15,14 @@ for article_type in article; do
             mkdir -p ${outdir}
         fi
 
-        echo jupyter nbconvert ${nb_path} --to markdown --output ${outdir}/index.md
-        jupyter nbconvert ${nb_path} --to markdown --output ${outdir}/index.md
+        # Convert Jupyter notebook to markdown
+        echo jupyter nbconvert ${indir}/index.ipynb --to markdown --stdout
+        jupyter nbconvert ${indir}/index.ipynb --to markdown --stdout >${outdir}/index.md
+
+        # Copy images
+        for png in $(ls -1 ${indir}/*.png); do
+            echo cp ${png} ${outdir}/
+            cp ${png} ${outdir}/
+        done
     done
 done
