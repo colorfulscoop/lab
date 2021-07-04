@@ -1,4 +1,4 @@
-# カラフルスコップ研究室のメンバー一覧
+# カラフルスコップ研究室のメンバー
 
 <div class="card mb-3" style="max-width: 540px;">
   <div class="row no-gutters">
