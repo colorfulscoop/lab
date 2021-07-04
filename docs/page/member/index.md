@@ -12,6 +12,8 @@
     </div>
     </div>
   </div>
+</div>
+<div class="card mb-3" style="max-width: 540px;">
   <div class="row no-gutters">
     <div class="col-md-4">
       <img src="./debuchan.png" class="card-img-top" alt="...">
@@ -23,6 +25,8 @@
     </div>
     </div>
   </div>
+</div>
+<div class="card mb-3" style="max-width: 540px;">
   <div class="row no-gutters">
     <div class="col-md-4">
       <img src="./chibi-buchan.png" class="card-img-top" alt="...">
@@ -34,6 +38,8 @@
     </div>
     </div>
   </div>
+</div>
+<div class="card mb-3" style="max-width: 540px;">
   <div class="row no-gutters">
     <div class="col-md-4">
       <img src="./chibichibi-buchan.png" class="card-img-top" alt="...">
@@ -43,6 +49,8 @@
       <p class="card-text">カラフルスコップ研究室の事務員さん。みんなが研究できるように優しく見守っている。</p>
     </div>
   </div>
+</div>
+<div class="card mb-3" style="max-width: 540px;">
   <div class="row no-gutters">
     <div class="col-md-4">
       <img src="./mini-buchan.png" class="card-img-top" alt="...">
