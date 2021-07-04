@@ -3,11 +3,11 @@
 <div class="card mb-3" style="max-width: 540px;">
   <div class="row no-gutters">
     <div class="col-md-4">
-      <img src="./buchan.png" class="card-img-top" alt="...">
+      <img src="./buchan.png" class="card-img-top" alt="..." style="max-width:300px">
     </div>
     <div class="col-md-8">
       <div class="card-body">
-        <h5 class="card-title">ぶーちゃん</h5>
+        <p class="card-title">ぶーちゃん</p>
         <p class="card-text">カラフルスコップ研究室主任研究員。思いやりがあってやさしく、面倒見もいい。</p>
       </div>
     </div>
@@ -65,3 +65,5 @@
     </div>
   </div>
 </div>
+
+メンバー募集中！
