@@ -65,5 +65,18 @@
     </div>
   </div>
 </div>
+<div class="card mb-3" style="max-width: 540px;">
+  <div class="row no-gutters">
+    <div class="col-md-4">
+      <img src="./poji-buchan.png" class="card-img-top" alt="...">
+    </div>
+    <div class="col-md-8">
+      <div class="card-body">
+        <p class="card-title">ぽじぶーちゃん</p>
+        <p class="card-text">カラフルスコップ株式会社から出向してきた会社員。ひさしぶりの研究でドキドキしている。社会で訓練されたのか「ぽじ」としゃべる。</p>
+      </div>
+    </div>
+  </div>
+</div>
 
 メンバー募集中！
