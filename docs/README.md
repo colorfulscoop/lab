@@ -10,12 +10,8 @@
       <img src="top.png" class="d-block w-100" alt="...">
     </div>
     <div class="carousel-item">
-      <img src="top.png" class="d-block w-100" alt="...">
+      <img src="blog/20211002-convmodel/20211002-01.jpg" class="d-block w-100" alt="...">
     </div>
-    <div class="carousel-item">
-      <img src="top.png" class="d-block w-100" alt="...">
-    </div>
-  </div>
 </div>
 
 **カラフルスコップ研究室** へようこそ。
