@@ -4,7 +4,7 @@
 <img src="top.png" alt="" class="rounded mx-auto d-block">
 -->
 
-<div id="top_slide" class="carousel slide" data-bs-ride="carousel" style="max-width: 800px; margin: auto;">
+<div id="top_slide" class="carousel slide" data-bs-ride="carousel" style="max-width: 700px; margin: auto;">
   <div class="carousel-indicators">
     <button type="button" data-bs-target="#top_slide" data-bs-slide-to="0" class="active" aria-current="true" aria-label="Slide 1"></button>
     <button type="button" data-bs-target="#top_slide" data-bs-slide-to="1" aria-label="Slide 2"></button>
@@ -30,6 +30,8 @@
     <span class="visually-hidden">Next</span>
   </button>
 </div>
+
+<br>
 
 **カラフルスコップ研究室** へようこそ。
 研究室の [チームメンバー](page/member/) が日々の研究開発の内容や気づきを記事・ブログ形式でお届けします。
