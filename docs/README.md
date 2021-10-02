@@ -4,7 +4,7 @@
 <img src="top.png" alt="" class="rounded mx-auto d-block">
 -->
 
-<div id="top_slide" class="carousel slide" data-bs-ride="carousel">
+<div id="top_slide" class="carousel slide" data-bs-ride="carousel" style="max-width: 800px;">
   <div class="carousel-indicators">
     <button type="button" data-bs-target="#top_slide" data-bs-slide-to="0" class="active" aria-current="true" aria-label="Slide 1"></button>
     <button type="button" data-bs-target="#top_slide" data-bs-slide-to="1" aria-label="Slide 2"></button>
@@ -15,17 +15,17 @@
       <img src="top.png" class="d-block w-100" alt="...">
     </div>
     <div class="carousel-item">
-      <img src="blog/20211002-convmodel/20211002-01.jpg" class="d-block w-100" alt="...">
+      <img src="blog/20211002-convmodel/20211002-01.jpg" class="d-block w-100" alt="..." style="object-fit: cover;">
     </div>
     <div class="carousel-item">
       <img src="blog/20211002-convmodel/20211002-02.jpg" class="d-block w-100" alt="...">
     </div>
   </div>
-  <button class="carousel-control-prev" type="button" data-bs-target="#top_slide" data-bs-slide="prev">
+  <button class="carousel-control-prev" type="button" data-bs-target="#top_slide" data-bs-slide="prev" style="object-fit: cover;">
     <span class="carousel-control-prev-icon" aria-hidden="true"></span>
     <span class="visually-hidden">Previous</span>
   </button>
-  <button class="carousel-control-next" type="button" data-bs-target="#top_slide" data-bs-slide="next">
+  <button class="carousel-control-next" type="button" data-bs-target="#top_slide" data-bs-slide="next" style="object-fit: cover;">
     <span class="carousel-control-next-icon" aria-hidden="true"></span>
     <span class="visually-hidden">Next</span>
   </button>
