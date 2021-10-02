@@ -13,4 +13,5 @@
 
 **ブログ**
 
+* 2021/10/02 - [会話学習・返答生成フレームワーク convmodel を作成しました](blog/20211002-convmodel)
 * 2021/06/28 - [PyTorch 1.9.0 で BufferedShuffleDataset を使う](blog/20210628-buffereds_shuffle_dataset)

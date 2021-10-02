@@ -20,7 +20,7 @@ for article_type in article blog; do
         jupyter nbconvert ${indir}/index.ipynb --to markdown --stdout >${outdir}/index.md
 
         # Copy images
-        for png in $(ls -1 ${indir}/*.png); do
+        for png in $(ls -1 ${indir}/*.png ${indir}/*.jpg); do
             echo cp ${png} ${outdir}/
             cp ${png} ${outdir}/
         done
