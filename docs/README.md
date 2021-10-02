@@ -1,6 +1,8 @@
 # Colorful Scoop Lab
 
+<!--
 <img src="top.png" alt="" class="rounded mx-auto d-block">
+-->
 
 <div id="top_slide" class="carousel slide" data-bs-ride="carousel">
   <div class="carousel-inner">
