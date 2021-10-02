@@ -3,7 +3,7 @@ created_on: 2021/10/02
 updated_on: 2021/10/02
 ---
 
-# 会話学習・返答生成フレームワーク convmodel を作成しました
+# 会話学習・応答生成フレームワーク convmodel を作成しました
 
 カラフルスコップ研究室に出向で来たぽじぶーちゃんの初めの仕事は、研究室の実験で皆が使っている会話モデルを使いやすくするためにフレームワーク化することでした。
 
@@ -17,22 +17,22 @@ updated_on: 2021/10/02
 
 ここでは、フレームワークの詳細に移る前に会話システムの概要を話したいと思います。
 
-一般的な会話システムでよくある手法は、事前に入力発話に対する返答を用意しておく方法です。
-この手法のメリットの一つは、作成者が設計した会話フロー通りに動くことを保証でき、作成した返答以外返さないようにできる点です。
-このメリットは非常に大きく、特に企業では意図しない返答をしてはならないケースがほとんどなため、企業が提供するチャットボットでは重宝します。
+一般的な会話システムでよくある手法は、事前に入力発話に対する応答を用意しておく方法です。
+この手法のメリットの一つは、作成者が設計した会話フロー通りに動くことを保証でき、作成した応答以外返さないようにできる点です。
+このメリットは非常に大きく、特に企業では意図しない応答をしてはならないケースがほとんどなため、企業が提供するチャットボットでは重宝します。
 
 **ノート:** ぽじぶーちゃんは企業から出向してきているので企業事情に明るいです。
 
-一方で、会話の流れというのは実に様々であるため、あらかじめどのような発話がくるかを予測して返答を準備しておくというのは難しいものです。
+一方で、会話の流れというのは実に様々であるため、あらかじめどのような発話がくるかを予測して応答を準備しておくというのは難しいものです。
 
-これを克服するために、返答文をその場で生成するアプローチがあります。
+これを克服するために、応答文をその場で生成するアプローチがあります。
 特に近年のTransformerを使ったアプローチでは精度よく文章生成が可能になってきていることもあり、この生成アプローチを採用するシステムもだんだんと出てきています。
 ただし、生成アプローチは意図していない回答を返してしまう可能性もあるため、企業では依然として採用を見送るのが一般的なようです。
 
 convmodelは、生成アプローチを採用した会話モデルを提供しています。
 具体的には、GPT-2 といった [transformers](https://github.com/huggingface/transformers) が提供している
 [デコーダモデル](https://huggingface.co/transformers/model_summary.html#decoders-or-autoregressive-models)をファインチューニングすることで会話モデルを学習します。
-convmodelはマルチターンの会話に対応しており、学習・返答生成のための便利なインターフェースを提供しています。
+convmodelはマルチターンの会話に対応しており、学習・応答生成のための便利なインターフェースを提供しています。
 
 それでは以下で convmodel について見ていきましょう。
 
@@ -119,14 +119,14 @@ tokenizer(["おはよう", "おはよう。調子は？", "いいです"])
 | attention_mask | 1 | 1 | 1 | 1 | 1 | 1 | 1 | 1 | 1 | 1 | 1 | 1 |
 
 結果を見ると `input_ids` の他に `token_type_ids` というのがあることがわかります。
-`token_type_ids` は、各発話の話者がわかるようにidをふっています。初めに話し始める話者を `0`, それに返答する話者を `1` として順にidを振っていきます。
+`token_type_ids` は、各発話の話者がわかるようにidをふっています。初めに話し始める話者を `0`, それに応答する話者を `1` として順にidを振っていきます。
 `token_type_ids`の説明は[transformersドキュメント](https://huggingface.co/transformers/glossary.html#token-type-ids)にもあるので参考にしてください。
 
 `attention_mask` は、アテンションを当てる位置を指定するために用います。全てのトークンにアテンションを当てるため全て `1` を設定しています。
 
 convmodel はこのトークナイザの結果をデコーダモデルに入力して、次の単語を当てるように学習を行います。
 
-ここではトークナイザの説明をしましたが、実際にconvmodelを使って学習・返答生成を行う際には
+ここではトークナイザの説明をしましたが、実際にconvmodelを使って学習・応答生成を行う際には
 トークナイズするコードを自分で書く必要はありません。
 詳しくは次の「モデル学習」でみていきましょう。
 
@@ -312,9 +312,9 @@ spiece.model
 tokenizer_config.json
 ```
 
-## 返答生成
+## 応答生成
 
-モデルが学習できたら、返答を生成してみましょう。
+モデルが学習できたら、応答を生成してみましょう。
 学習モデルのロードには、モデル初期化時と同じ `ConversationModel.from_pretrained` メソッドを使います。
 ただし今回は、学習モデルを保存したディレクトリを指定します。
 
@@ -323,7 +323,7 @@ tokenizer_config.json
 model = ConversationModel.from_pretrained("model")
 ```
 
-返答の生成には `ConversationModel.generate` メソッドを使います。
+応答の生成には `ConversationModel.generate` メソッドを使います。
 引数の `context` に会話のコンテキストを指定します。
 
 `generate` メソッドには transformers の [generate](https://huggingface.co/transformers/main_classes/model.html?highlight=generate#transformers.generation_utils.GenerationMixin.generate) メソッドの任意のパラメータを指定できます。
@@ -383,7 +383,7 @@ model.generate(
 最後にまとめておきましょう。
 
 convmodelは生成アプローチによる会話モデルのフレームワークで [transformers](https://github.com/huggingface/transformers) の
-[デコーダモデル](https://huggingface.co/transformers/model_summary.html#decoders-or-autoregressive-models)をモデルとして使い、便利な学習・返答生成インターフェースを提供します。
+[デコーダモデル](https://huggingface.co/transformers/model_summary.html#decoders-or-autoregressive-models)をモデルとして使い、便利な学習・応答生成インターフェースを提供します。
 
 現時点では実験的な機能ですが、学習・評価・トライのループを補助する [convmodel CLI](https://colorfulscoop.github.io/convmodel-docs/cli/) も実装しています。
 
