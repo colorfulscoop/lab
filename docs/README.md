@@ -15,7 +15,7 @@
       <img src="top.png" class="d-block w-100" alt="...">
     </div>
     <div class="carousel-item">
-      <img src="blog/20211002-convmodel/20211002-01.jpgclass="d-block w-100" alt="...">
+      <img src="blog/20211002-convmodel/20211002-01.jpg" class="d-block w-100" alt="...">
     </div>
     <div class="carousel-item">
       <img src="..." class="d-block w-100" alt="...">
