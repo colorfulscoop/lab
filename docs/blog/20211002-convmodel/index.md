@@ -295,7 +295,7 @@ model.fit(
 
 実行時のログは以下のようになります。少し長いので最後のバリデーションの結果のみ表示します。
 
-```sh
+```
 ...
 {'epoch': 5, 'valid_loss': 3.288458056575775, 'valid_ppl': 26.801505373057534, 'save_model': True}
 ```
@@ -303,25 +303,44 @@ model.fit(
 学習が完了すると `output_path` で指定したディレクトリ以下にモデルが保存されていることが確認できます。
 
 
-```sh
-$ ls -1 model/
-config.json
-pytorch_model.bin
-special_tokens_map.json
-spiece.model
-tokenizer_config.json
+```python
+!ls -1 model
 ```
 
-## 応答生成
+    config.json
+    pytorch_model.bin
+    special_tokens_map.json
+    spiece.model
+    tokenizer_config.json
 
-モデルが学習できたら、応答を生成してみましょう。
-学習モデルのロードには、モデル初期化時と同じ `ConversationModel.from_pretrained` メソッドを使います。
-ただし今回は、学習モデルを保存したディレクトリを指定します。
+
+## 評価
+
+モデルが学習できたらテストセットで評価してみましょう。
+
+まずは学習したモデルをロードします。
+ロードにはモデル初期化時と同じ ConversationModel.from_pretrained メソッドを使います。
+ただし、今回は学習モデルを保存したディレクトリを指定します。
 
 
 ```python
 model = ConversationModel.from_pretrained("model")
 ```
+
+モデルがロードできたら、評価には `ConversationModel.eval` メソッドでモデルを評価します。
+
+```py
+model.eval(eval_iterator=test_iterator, batch_size=16)
+```
+
+評価が完了すると評価結果のパープレキシティが表示されます。
+
+```
+```
+
+## 応答生成
+
+モデルが学習できたら、応答を生成してみましょう。
 
 応答の生成には `ConversationModel.generate` メソッドを使います。
 引数の `context` に会話のコンテキストを指定します。
