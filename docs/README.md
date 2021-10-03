@@ -18,7 +18,7 @@
       <img src="top.png" class="d-block w-100" alt="..." style="max-height: none;">
     </div>
     -->
-    <div class="carousel-item">
+    <div class="carousel-item active">
       <img src="blog/20211002-convmodel/20211002-01.jpg" class="d-block w-100" alt="..." style="max-height: none">
     </div>
     <div class="carousel-item">
