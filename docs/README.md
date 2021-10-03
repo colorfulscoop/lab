@@ -8,17 +8,21 @@
   <div class="carousel-indicators">
     <button type="button" data-bs-target="#top_slide" data-bs-slide-to="0" class="active" aria-current="true" aria-label="Slide 1"></button>
     <button type="button" data-bs-target="#top_slide" data-bs-slide-to="1" aria-label="Slide 2"></button>
+    <!--
     <button type="button" data-bs-target="#top_slide" data-bs-slide-to="2" aria-label="Slide 3"></button>
+    -->
   </div>
   <div class="carousel-inner">
+    <!--
     <div class="carousel-item active">
-      <img src="top.png" class="d-block w-100" alt="..." style="object-fit: cover;">
+      <img src="top.png" class="d-block w-100" alt="..." style="max-height: none;">
+    </div>
+    -->
+    <div class="carousel-item">
+      <img src="blog/20211002-convmodel/20211002-01.jpg" class="d-block w-100" alt="..." style="max-height: none">
     </div>
     <div class="carousel-item">
-      <img src="blog/20211002-convmodel/20211002-01.jpg" class="d-block w-100" alt="..." style="object-fit: cover;">
-    </div>
-    <div class="carousel-item">
-      <img src="blog/20211002-convmodel/20211002-02.jpg" class="d-block w-100" alt="..." style="object-fit: cover;">
+      <img src="blog/20211002-convmodel/20211002-02.jpg" class="d-block w-100" alt="..." style="max-height: none">
     </div>
   </div>
   <button class="carousel-control-prev" type="button" data-bs-target="#top_slide" data-bs-slide="prev">
