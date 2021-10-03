@@ -336,6 +336,7 @@ model.eval(eval_iterator=test_iterator, batch_size=16)
 評価が完了すると評価結果のパープレキシティが表示されます。
 
 ```
+{'eval_loss': 3.2796722898864745, 'eval_ppl': 26.56706497726777}
 ```
 
 ## 応答生成
