@@ -22,7 +22,7 @@
       <img src="blog/20211002-convmodel/20211002-01.jpg" class="d-block w-100" alt="..." style="max-height: none">
     </div>
     <div class="carousel-item">
-      <img src="blog/20211002-convmodel/20211002-02.jpg" class="d-block w-100" alt="..." style="max-height: none">
+      <img src="top2.jpg" class="d-block w-100" alt="..." style="max-height: none">
     </div>
   </div>
   <button class="carousel-control-prev" type="button" data-bs-target="#top_slide" data-bs-slide="prev">
