@@ -1,5 +1,3 @@
-# Colorful Scoop Lab
-
 <!--
 <img src="top.png" alt="" class="rounded mx-auto d-block">
 -->
